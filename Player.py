@@ -1,20 +1,23 @@
 #!/usr/bin/env python
 # coding=utf-8
-import random
 
+import random
 import pyganim
+import pygame
 from pygame import *
 
 # Необходимые константы
 WIDTH = 26
 HEIGHT = 41
-MOVE_SPEED = 4
+MOVE_SPEED = 3
 JUMP = 8
 GRAVITY = 0.45
 COLOR = "#AA3311"
+MIN_HEIGHT = 896
 
 # Константы анимаций
-ANIMATION_DELAY = 0.1  # Длительность одного кадра
+ANIMATION_DELAY = 0.14  # Длительность одного кадра
+ANIMATION_DELAY_SUPER_SPEED = 0.05  # Длительность одного кадра при супер скорости
 
 # Анимация ходьбы
 ANIMATION_WALK = [
@@ -26,6 +29,10 @@ ANIMATION_WALK = [
 
 # Анимация неподвижности
 ANIMATION_STAY = [("textures/skelet/idle.png", 0.1)]
+
+# Подгрузка звуков
+DIE_SOUND = "sounds/skeleton/die.wav"
+FOOTSTEP_SOUND = "sounds/skeleton/footstep.ogg"
 
 
 class Player(sprite.Sprite):
@@ -62,7 +69,7 @@ class Player(sprite.Sprite):
         self.stay_animation.blit(self.image, (0, 0))
 
     # Обновление изменений
-    def update(self, left, right, up, platforms):
+    def update(self, left, right, up, platforms, illusionary, breakable):
         if up:
             if self.isStay:
                 self.y_speed = -JUMP
@@ -76,26 +83,34 @@ class Player(sprite.Sprite):
             # Проигрываем анимацию движения
             self.image.fill(Color(COLOR))
             self.walk_animation_left.blit(self.image, (0, 0))
+            # Проигрываем звуки ходьбы
+            if not up and self.y_speed == 0:
+                pygame.mixer.Sound(FOOTSTEP_SOUND).play(0, 0, 1)
             self.player_direction = True  # Меняем направление взгляда
         if right:
             self.x_speed = MOVE_SPEED  # Движение вправо
             # Проигрываем анимацию движения
             self.image.fill(Color(COLOR))
             self.walk_animation_right.blit(self.image, (0, 0))
+            # Проигрываем звуки ходьбы
+            if not up and self.y_speed == 0:
+                pygame.mixer.Sound(FOOTSTEP_SOUND).play(0, 0, 1)
             self.player_direction = False  # Меняем направление взгляда
         if not(left or right):
             self.x_speed = 0  # На месте
         if not self.isStay:
             self.y_speed += GRAVITY
+        if self.rect.y > MIN_HEIGHT:
+            self.die()
         self.isStay = False
-        self.rect.y += self.y_speed
-        self.collide(0, self.y_speed, platforms)
-        self.rect.x += self.x_speed # Перенос позицию игрока по x
-        self.collide(self.x_speed, 0, platforms)
+        self.rect.y += self.y_speed  # Перенос позицию игрока по y
+        self.collide(0, self.y_speed, platforms, illusionary, breakable)
+        self.rect.x += self.x_speed  # Перенос позицию игрока по x
+        self.collide(self.x_speed, 0, platforms, illusionary, breakable)
 
-    def collide(self, x_speed, y_speed, platforms):
+    def collide(self, x_speed, y_speed, platforms, illusionary, breakable):
         for p in platforms:
-            if sprite.collide_rect(self, p): # Если есть пересечение платформы с игроком
+            if sprite.collide_rect(self, p):  # Если есть пересечение платформы с игроком
                 # Обездвиживаем, если движется вправо
                 if x_speed > 0:
                     self.rect.right = p.rect.left
@@ -111,3 +126,16 @@ class Player(sprite.Sprite):
                 if y_speed < 0:
                     self.rect.top = p.rect.bottom
                     self.y_speed = 0
+        for i in illusionary:
+            if sprite.collide_rect(self, i):
+                pass
+        for b in breakable:
+            if sprite.collide_rect(self, b):
+                b.destroy()
+
+    def die(self):
+        pygame.mixer.music.load(DIE_SOUND)
+        pygame.mixer.music.play()
+        time.wait(2000)
+        self.rect.x = self.start_x
+        self.rect.y = self.start_y

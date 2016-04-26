@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 
+import random
 import pygame
 import os
 from Camera import *
@@ -44,6 +45,8 @@ def main():
     # Ищем entity
     entities = pygame.sprite.Group()  # Создаем группу для объектов
     platforms = []  # То, что может служить опорой или барьером
+    illusionary = []  # То, через что можно пройти и оно не исчезнет
+    breakable = []  # То, через что можно пройти и оно исчезнет
     entities.add(skeleton)  # Добавляем в объекты игрока
 
     # Уровень
@@ -55,19 +58,19 @@ def main():
         "             __                             ",
         "                                            ",
         "__                                          ",
-        "                                            ",
+        "                    ;                       ",
         "                    ___                     ",
         "                  ######                    ",
         "                                            ",
         "      ___                                   ",
-        "                                            ",
+        "     ;;  ;                                  ",
         "   ___________                              ",
         "   __########__                             ",
-        "                 _                          ",
+        "                 _  ;                       ",
         "                    __                      ",
-        "      ______                                ",
-        "   ___###__________                         ",
-        "###########################_________________"
+        "      ______   ;                            ",
+        " ; ___###________     ;;    ;   ;;     @    ",
+        "#################  ########___  ____ _______"
     ]
     timer = pygame.time.Clock()  # Ограничитель FPS
 
@@ -85,6 +88,14 @@ def main():
                 pf = Platform(x, y, "dirt")
                 entities.add(pf)
                 platforms.append(pf)
+            elif col == "@":
+                pf = Platform(x, y, "apple")
+                entities.add(pf)
+                breakable.append(pf)
+            elif col == ";":
+                pf = Platform(x, y, "grass")
+                entities.add(pf)
+                illusionary.append(pf)
             x += PLATFORM_WIDTH
         y += PLATFORM_HEIGHT
         x = 0
@@ -118,17 +129,21 @@ def main():
             # Обрабатываем событие выхода
             if e.type == QUIT:
                 raise SystemExit
-        screen.blit(bg, (0, 0))  # Перерисовка всего каждую итерацию цикла
 
         # Перерисовка персонажа
-        skeleton.update(left, right, up, platforms)
-
+        skeleton.update(left, right, up, platforms, illusionary, breakable)
+        # Перерисовка всего каждую итерацию цикла
+        screen.blit(bg, (0, 0))
         # Обновление камеры по привязке к игроку
         camera.update(skeleton)
 
         # Отрисовываем каждую итерацию объекты(необходимо для правильной работы камеры)
         for e in entities:
             screen.blit(e.image, camera.apply(e))
+        for i in illusionary:
+            screen.blit(i.image, camera.apply(i))
+        for b in breakable:
+            screen.blit(b.image, camera.apply(b))
         pygame.display.update()  # Обновление всего окна игры
 
 # Изначально запустить функцию main
