@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
+import random
 
 import pyganim
 from pygame import *
@@ -9,17 +10,21 @@ WIDTH = 26
 HEIGHT = 41
 MOVE_SPEED = 4
 JUMP = 8
-GRAVITY = 0.35
+GRAVITY = 0.45
 COLOR = "#AA3311"
 
 # Константы анимаций
-ANIMATION_DELAY = 0.1
+ANIMATION_DELAY = 0.1  # Длительность одного кадра
+
+# Анимация ходьбы
 ANIMATION_WALK = [
-    ("textures/skelet/walk-1.png"),
-    ("textures/skelet/walk-2.png"),
-    ("textures/skelet/walk-3.png"),
-    ("textures/skelet/walk-4.png")
+    "textures/skelet/walk-1.png",
+    "textures/skelet/walk-2.png",
+    "textures/skelet/walk-3.png",
+    "textures/skelet/walk-4.png"
 ]
+
+# Анимация неподвижности
 ANIMATION_STAY = [("textures/skelet/idle.png", 0.1)]
 
 
@@ -27,18 +32,18 @@ class Player(sprite.Sprite):
     # Инициализация
     def __init__(self, x, y):
         sprite.Sprite.__init__(self)
-        self.x_speed = 0 # Скорость по x
-        self.y_speed = 0 # Скорость по y
-        self.isStay = False # Стоит ли игрок на земле или нет
-        self.player_direction = False # Направление взгляда
-        self.start_x = x # Начальная позиция по x
-        self.start_y = y # Начальная позиция по y
+        self.x_speed = 0  # Скорость по x
+        self.y_speed = 0  # Скорость по y
+        self.isStay = False  # Стоит ли игрок на земле или нет
+        self.player_direction = False  # Направление взгляда
+        self.start_x = x  # Начальная позиция по x
+        self.start_y = y  # Начальная позиция по y
         self.image = Surface((WIDTH, HEIGHT))
         self.image.fill(Color(COLOR))
         self.rect = Rect(x, y, WIDTH, HEIGHT)
 
         # Необходимое для анимации персонажа
-        self.image.set_colorkey(Color(COLOR)) # Прозрачный фон
+        self.image.set_colorkey(Color(COLOR))  # Прозрачный фон
         # Анимация ходьбы
         animations = []
         for animation in ANIMATION_WALK:
@@ -67,19 +72,19 @@ class Player(sprite.Sprite):
             else:
                 self.stay_animation.blit(self.image, (0, 0))
         if left:
-            self.x_speed = -MOVE_SPEED # Движение влево
+            self.x_speed = -MOVE_SPEED  # Движение влево
             # Проигрываем анимацию движения
             self.image.fill(Color(COLOR))
             self.walk_animation_left.blit(self.image, (0, 0))
-            self.player_direction = True # Меняем направление взгляда
+            self.player_direction = True  # Меняем направление взгляда
         if right:
-            self.x_speed = MOVE_SPEED # Движение вправо
+            self.x_speed = MOVE_SPEED  # Движение вправо
             # Проигрываем анимацию движения
             self.image.fill(Color(COLOR))
             self.walk_animation_right.blit(self.image, (0, 0))
-            self.player_direction = False # Меняем направление взгляда
+            self.player_direction = False  # Меняем направление взгляда
         if not(left or right):
-            self.x_speed = 0 # На месте
+            self.x_speed = 0  # На месте
         if not self.isStay:
             self.y_speed += GRAVITY
         self.isStay = False
