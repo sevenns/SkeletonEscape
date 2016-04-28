@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-from pygame import *
 import random
+from pygame import *
 
 # Необходимые константы
 PLATFORM_WIDTH = 32
@@ -19,7 +19,7 @@ blocks = [
 ]
 
 items = [
-    "textures/items/apple_golden.png"
+    "textures/items/bone.png"
 ]
 
 grass = [
@@ -45,25 +45,26 @@ grass = [
 
 
 class Platform(sprite.Sprite):
-    type = ""
-
     def __init__(self, x, y, type):
         sprite.Sprite.__init__(self)
+        self.type = ""
+        self.exist = True
         if type == "rock":
             self.image = image.load_extended(blocks[random.randint(1, 5)])
             self.type = "rock"
         elif type == "dirt":
             self.image = image.load_extended(blocks[0])
             self.type = "dirt"
-        elif type == "apple":
+        elif type == "bone":
             self.image = image.load_extended(items[0])
-            self.type = "apple"
+            self.type = "bone"
         elif type == "grass":
             self.image = image.load_extended(grass[random.randint(0, 17)])
         self.rect = Rect(x, y, PLATFORM_WIDTH, PLATFORM_HEIGHT)
 
     def destroy(self):
-        pass
+        self.exist = False
+        self.kill()
 
     def get_type(self):
         return self.type

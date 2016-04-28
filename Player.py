@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-import random
-import pyganim
 import pygame
+import pyganim
 from pygame import *
 
 # Необходимые константы
@@ -39,6 +38,8 @@ class Player(sprite.Sprite):
     # Инициализация
     def __init__(self, x, y):
         sprite.Sprite.__init__(self)
+        self.bones = 0  # Кол-во костей у игрока
+        self.died = False
         self.x_speed = 0  # Скорость по x
         self.y_speed = 0  # Скорость по y
         self.isStay = False  # Стоит ли игрок на земле или нет
@@ -130,12 +131,15 @@ class Player(sprite.Sprite):
             if sprite.collide_rect(self, i):
                 pass
         for b in breakable:
-            if sprite.collide_rect(self, b):
+            if sprite.collide_rect(self, b) and b.exist:
+                self.bones += 1
+
                 b.destroy()
 
     def die(self):
         pygame.mixer.music.load(DIE_SOUND)
         pygame.mixer.music.play()
         time.wait(2000)
+        self.died = True
         self.rect.x = self.start_x
         self.rect.y = self.start_y
