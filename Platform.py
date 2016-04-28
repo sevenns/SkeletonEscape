@@ -23,17 +23,12 @@ items = [
 ]
 
 grass = [
-    "textures/blocks/crops_0.png",
-    "textures/blocks/crops_1.png",
-    "textures/blocks/crops_2.png",
     "textures/blocks/crops_3.png",
     "textures/blocks/crops_4.png",
     "textures/blocks/deadbush.png",
     "textures/blocks/flower.png",
-    "textures/blocks/mushroom_brown.png",
     "textures/blocks/netherStalk_0.png",
     "textures/blocks/netherStalk_1.png",
-    "textures/blocks/potatoes_0.png",
     "textures/blocks/rose.png",
     "textures/blocks/sapling.png",
     "textures/blocks/sapling_birch.png",
@@ -59,8 +54,11 @@ class Platform(sprite.Sprite):
             self.image = image.load_extended(items[0])
             self.type = "bone"
         elif type == "grass":
-            self.image = image.load_extended(grass[random.randint(0, 17)])
+            self.image = image.load_extended(grass[random.randint(0, 12)])
         self.rect = Rect(x, y, PLATFORM_WIDTH, PLATFORM_HEIGHT)
+
+    def update(self, update_speed):
+        self.rect.x -= update_speed  # Перенос позицию игрока по x
 
     def destroy(self):
         self.exist = False
