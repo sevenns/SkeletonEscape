@@ -1,98 +1,83 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-import pygame
 import pyganim
+import pygame
 from pygame import *
-
-# Необходимые константы
-WIDTH = 26
-HEIGHT = 41
-MOVE_SPEED = 3
-JUMP = 8
-GRAVITY = 0.45
-COLOR = "#AA3311"
-MIN_HEIGHT = 896
-
-# Константы анимаций
-ANIMATION_DELAY = 0.14  # Длительность одного кадра
-ANIMATION_DELAY_SUPER_SPEED = 0.05  # Длительность одного кадра при супер скорости
-
-# Анимация ходьбы
-ANIMATION_WALK = [
-    "textures/skelet/walk-1.png",
-    "textures/skelet/walk-2.png",
-    "textures/skelet/walk-3.png",
-    "textures/skelet/walk-4.png"
-]
-
-# Анимация в неподвижности
-ANIMATION_STAY = [("textures/skelet/idle.png", 0.1)]
-
-# Подгрузка звуков
-DIE_SOUND = "sounds/skeleton/die.wav"
-FOOTSTEP_SOUND = "sounds/skeleton/footstep.ogg"
+import Game
 
 
-class Player(sprite.Sprite):
+class Player(pygame.sprite.Sprite):
+    __min_height = 868
+    __width = 26  # Ширина игрока
+    __height = 41  # Высота игрока
+    __jump_power = 8  # Сила прыжка игрока
+    __gravity = 0.45  # Гравитация
+    __color = "#AA3311"  # Цвет
+    __animation_delay = 0.14  # Длительность одного кадра при анимации
+    __animation_run = [  # Анимация бега
+        "textures/skelet/walk-1.png",
+        "textures/skelet/walk-2.png",
+        "textures/skelet/walk-3.png",
+        "textures/skelet/walk-4.png"
+    ]
+    __animation_stay = [("textures/skelet/idle.png", 0.1)]  # Анимация неподвижности
+    __die_sound = "sounds/skeleton/die.wav"
+
     # Инициализация
     def __init__(self, x, y):
-        sprite.Sprite.__init__(self)
+        pygame.sprite.Sprite.__init__(self)
         self.bones = 0  # Кол-во костей у игрока
         self.score = 0  # Очки игрока
         self.died = False  # Умер ли игрок
         self.jump_power = 0  # Скорость по y
-        self.move_speed = 0  # Скорость по x
         self.on_ground = False  # Стоит ли игрок на земле
-        self.start_x = x  # Начальная позиция по x
-        self.start_y = y  # Начальная позиция по y
-        self.image = Surface((WIDTH, HEIGHT))
-        self.image.fill(Color(COLOR))
-        self.rect = Rect(x, y, WIDTH, HEIGHT)
+        self.start_position_x = x  # Начальная позиция по x
+        self.start_position_y = y  # Начальная позиция по y
+        self.image = Surface((self.__width, self.__height))
+        self.image.fill(Color(self.__color))
+        self.rect = Rect(x, y, self.__width, self.__height)
 
         # Необходимое для анимации персонажа
-        self.image.set_colorkey(Color(COLOR))  # Прозрачный фон
+        self.image.set_colorkey(Color(self.__color))  # Прозрачный фон
         # Анимация ходьбы
         animations = []
-        for animation in ANIMATION_WALK:
-            animations.append((animation, ANIMATION_DELAY))
-        self.walk_animation = pyganim.PygAnimation(animations)
-        self.walk_animation.play()
+        for animation in self.__animation_run:
+            animations.append((animation, self.__animation_delay))
+        self.animation_run = pyganim.PygAnimation(animations)
+        self.animation_run.play()
         # Анимация в простое
-        self.stay_animation = pyganim.PygAnimation(ANIMATION_STAY)
-        self.stay_animation.play()
-        self.stay_animation.blit(self.image, (0, 0))
+        self.animation_stay = pyganim.PygAnimation(self.__animation_stay)
+        self.animation_stay.play()
+        self.animation_stay.blit(self.image, (0, 0))
 
-    # Обновление изменений
-    def update(self, up, platforms, illusionary, breakable):
-        if up:
+    # Отрисовка игрока
+    def update(self, player_jump, platforms, illusionary, breakable):
+        if player_jump:
             if self.on_ground:
-                self.jump_power = -JUMP
-                self.image.fill(Color(COLOR))
-                self.stay_animation.blit(self.image, (0, 0))
-        if not up and self.jump_power == 0:
-            # Проигрываем анимацию движения
-            self.image.fill(Color(COLOR))
-            self.walk_animation.blit(self.image, (0, 0))
-            # Проигрываем звуки шагов
-            # pygame.mixer.Sound(FOOTSTEP_SOUND).play(0, 0, 1)
+                self.jump_power = -self.__jump_power
+                self.image.fill(Color(self.__color))
+                self.animation_stay.blit(self.image, (0, 0))
+        if not player_jump and self.jump_power == 0:
+            self.image.fill(Color(self.__color))
+            self.animation_run.blit(self.image, (0, 0))  # Проигрываем анимацию движения
         if not self.on_ground:
-            self.jump_power += GRAVITY
-
-        if self.rect.y > MIN_HEIGHT:
+            self.jump_power += self.__gravity
+        if self.rect.y > self.__min_height:
             self.die()
         self.on_ground = False
         self.rect.y += self.jump_power  # Перенос позицию игрока по y
-        self.rect.x += self.move_speed
-        self.collide(self.move_speed, self.jump_power, platforms, illusionary, breakable)
+        self.collide(self.jump_power, platforms, illusionary, breakable)
 
-    def collide(self, x_speed, y_speed, platforms, illusionary, breakable):
+    # Столькновения с объектами
+    def collide(self, y_speed, platforms, illusionary, breakable):
         for p in platforms:
             if sprite.collide_rect(self, p):  # Если есть пересечение платформы с игроком
                 # Обездвиживаем при падении вниз
                 if y_speed > 0:
                     if self.rect.y == p.rect.y - 9:
                         self.rect.right = p.rect.left
+                        # self.rect.x -= Game.get
                     else:
                         self.rect.bottom = p.rect.top
                     self.on_ground = True
@@ -111,11 +96,10 @@ class Player(sprite.Sprite):
                 b.destroy()
 
     def die(self):
-        pygame.mixer.Sound(DIE_SOUND).play(0, 0, 0)
+        pygame.mixer.Sound(self.__die_sound).play(0, 0, 0)
         time.wait(2000)
         self.died = True
-        self.stopped = False
         self.bones = 0
         self.score = 0
-        self.rect.x = self.start_x
-        self.rect.y = self.start_y
+        self.rect.x = self.start_position_x
+        self.rect.y = self.start_position_y
