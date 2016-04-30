@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # coding=utf-8
 
+import Game
 import pyganim
 import pygame
 from pygame import *
-import Game
 
 
 class Player(pygame.sprite.Sprite):
-    __min_height = 868
     __width = 26  # Ширина игрока
     __height = 41  # Высота игрока
     __jump_power = 8  # Сила прыжка игрока
@@ -52,7 +51,7 @@ class Player(pygame.sprite.Sprite):
         self.animation_stay.blit(self.image, (0, 0))
 
     # Отрисовка игрока
-    def update(self, player_jump, platforms, illusionary, breakable):
+    def update(self, player_jump, game_difficult, platforms, illusionary, breakable):
         if player_jump:
             if self.on_ground:
                 self.jump_power = -self.__jump_power
@@ -63,27 +62,27 @@ class Player(pygame.sprite.Sprite):
             self.animation_run.blit(self.image, (0, 0))  # Проигрываем анимацию движения
         if not self.on_ground:
             self.jump_power += self.__gravity
-        if self.rect.y > self.__min_height:
-            self.die()
+        if self.rect.x < self.start_position_x:
+            self.rect.x += 1
+
         self.on_ground = False
         self.rect.y += self.jump_power  # Перенос позицию игрока по y
-        self.collide(self.jump_power, platforms, illusionary, breakable)
+        self.collide(self.jump_power, game_difficult, platforms, illusionary, breakable)
 
     # Столькновения с объектами
-    def collide(self, y_speed, platforms, illusionary, breakable):
+    def collide(self, y_speed, game_difficult, platforms, illusionary, breakable):
         for p in platforms:
             if sprite.collide_rect(self, p):  # Если есть пересечение платформы с игроком
                 # Обездвиживаем при падении вниз
                 if y_speed > 0:
-                    if self.rect.y == p.rect.y - 9:
-                        self.rect.right = p.rect.left
-                        # self.rect.x -= Game.get
+                    if p.rect.y + p.rect.bottom > self.rect.centery > p.rect.y:
+                        self.rect.x -= game_difficult * 2
                     else:
                         self.rect.bottom = p.rect.top
-                    self.on_ground = True
-                    self.jump_power = 0
+                        self.on_ground = True
+                        self.jump_power = 0
                 # Обездвиживаем при прыжке
-                if y_speed < 0:
+                if y_speed < 0 and self.rect.top >= p.rect.bottom - 1:
                     self.rect.top = p.rect.bottom
                     self.jump_power = 0
         for i in illusionary:
@@ -103,3 +102,9 @@ class Player(pygame.sprite.Sprite):
         self.score = 0
         self.rect.x = self.start_position_x
         self.rect.y = self.start_position_y
+
+    def get_player_width(self):
+        return self.__width
+
+    def get_player_height(self):
+        return self.__height

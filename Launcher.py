@@ -2,9 +2,10 @@
 # coding=utf-8
 
 import os
+import pygame
 from pygame import *
-from Intro import *
-from Game import *
+from Intro import Intro
+from Game import Game
 
 
 class Launcher(object):
@@ -24,15 +25,7 @@ class Launcher(object):
         game_intro = Intro()
         game_intro.start_intro(screen, bg)  # Сначала показываем меню
         game_start = Game()
-        game_start.start_game(screen, bg)
-
-    @staticmethod
-    def get_window_width():
-        return Launcher.__window_width
-
-    @staticmethod
-    def get_window_height():
-        return Launcher.__window_height
+        game_start.start_game(screen, bg, self.__window_width, self.__window_height)  # Запуск игры
 
 # Создаем и запускаем новую игру
 if __name__ == "__main__":

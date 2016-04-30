@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-import pygame
+import random
 from pygame import *
 from Zones import *
 from Camera import *
-from Launcher import *
 from Player import *
-from Block import *
+from Block import Block
 
 
 class Game(object):
     __game_music = "sounds/game.wav"
     __player = Player(100, 100)  # Создание самого игрока
-    __level_difficult = 3  # Уровень сложности
+    __game_difficult = 3  # Уровень сложности
+    __min_height = 868  # Минимальная высота, после нее игрок умирает
 
     # Ищем entity
     __entities = pygame.sprite.Group()  # Создаем группу для объектов
@@ -24,9 +24,10 @@ class Game(object):
     __breakable = []  # То, через что можно пройти и оно исчезнет
     __to_delete_breakable = []
 
-    def start_game(self, screen, bg):
+    def start_game(self, screen, bg, window_width, window_height):
         self.__entities.add(self.__player)  # Добавляем в объекты игрока
         player_jump = False  # Изначально игрок не прыгает
+        checkpoint = 0  # По достижение опр. кол-ва очков, очки игрока сохраняются сюда
         self.__draw_level(0, 0, start_zone)  # Отрисовываем уровень
         timer = pygame.time.Clock()  # Временной счетчик
 
@@ -44,8 +45,9 @@ class Game(object):
                 self.__draw_level(0, 0, start_zone)  # Отрисовка уровня
                 self.__entities.add(self.__player)  # Добавляем в объекты игрока
                 self.__player.died = False  # Оживляем игрока
-                self.__level_difficult = 3  # При каждом оживлении обнуляем уровень сложности
+                self.__game_difficult = 3  # При каждом оживлении обнуляем уровень сложности
                 time_counter = 0  # При каждом оживлении обнуляем временной счетчик
+                checkpoint = 0  # Обнуляем чекпоинт
 
             # Создаем объект камеры
             total_level_width = len(start_zone[0]) * Block.get_block_width()  # Высчитываем фактическую ширину уровня
@@ -73,7 +75,8 @@ class Game(object):
 
                 # Подгружаем к текущей зоне новую случайную
                 self.__draw_level(self.__player.rect.x + 1000, 0, zones[random.randint(0, 3)])
-            elif len(self.__to_delete_platforms) != 0 and self.__to_delete_platforms[len(self.__to_delete_platforms) - 1].rect.x < -10:
+            elif len(self.__to_delete_platforms) != 0 and self.__to_delete_platforms[
+                        len(self.__to_delete_platforms) - 1].rect.x < -10:
                 # Удаляем объекты, которые игрок пробежал
                 self.__entities.remove(self.__to_delete_platforms)
                 self.__entities.remove(self.__to_delete_illusionary)
@@ -91,18 +94,22 @@ class Game(object):
                 self.__to_delete_breakable = []
 
             # Отрисовка персонажа
-            self.__player.update(player_jump, self.__platforms, self.__illusionary, self.__breakable)
+            self.__player.update(player_jump, self.__game_difficult, self.__platforms, self.__illusionary, self.__breakable)
+
+            # Смерть игрока при падении вниз
+            if self.__player.rect.y > self.__min_height or self.__player.rect.x < -self.__player.get_player_width() * 3:
+                self.__player.die()
 
             # Отрисовка блоков(это заставляет их двигаться)
             for p in self.__platforms:
-                p.update(self.__level_difficult)
+                p.update(self.__game_difficult)
             for i in self.__illusionary:
-                i.update(self.__level_difficult)
+                i.update(self.__game_difficult)
             for b in self.__breakable:
-                b.update(self.__level_difficult)
+                b.update(self.__game_difficult)
 
             screen.blit(bg, (0, 0))  # Отрисовка всей картины каждую итерацию цикла
-            camera.update(self.__player)  # Обновление камеры по привязке к игроку
+            camera.update(self.__player, window_width, window_height)  # Обновление камеры по привязке к игроку
 
             # Кости игрока
             bones_msg = "Bones: " + str(self.__player.bones)  # Текст сообщения
@@ -113,17 +120,17 @@ class Game(object):
             screen.blit(text_surface, text_rect)  # Отображаем текст
 
             # Очки игрока
-            self.__player.score += time_counter / 10.0  # Используя счетчик времени копим очки игроку
-            if self.__player.score > 3000:  # Увеличиваем сложность уровня с 3000 очков
-                self.__level_difficult = 4
-            elif self.__player.score > 6000:  # Увеличиваем сложность уровня с 6000 очков
-                self.__level_difficult = 6
-            score_msg = "Score: " + str(int(self.__player.score))  # Текст сообщения
+            self.__player.score += time_counter / 10  # Используя счетчик времени копим очки игроку
+            score_msg = "Score: " + str(self.__player.score)  # Текст сообщения
             font_obj = pygame.font.SysFont("Harrington", 32)  # Шрифт
             text_surface = font_obj.render(score_msg, True, (255, 255, 255))  # Поверхность с текстом
             text_rect = text_surface.get_rect()  # Получаем область поверхности
             text_rect.center = (100, 100)  # Задаем координаты отображения текста
             screen.blit(text_surface, text_rect)  # Отображаем текст
+
+            if int(self.__player.score) - checkpoint == 4000:
+                checkpoint = self.__player.score
+                self.__game_difficult += 1
 
             # Отрисовываем объекты каждую итерацию
             for e in self.__entities:
@@ -177,12 +184,15 @@ class Game(object):
             self.__to_delete_illusionary.__delitem__(0)
 
     @staticmethod
-    def camera_configure(camera, target_rect):
+    def camera_configure(camera, target_rect, window_width, window_height):
         l, t, _, _ = target_rect
         _, _, w, h = camera
-        l, t = -l + Launcher.get_window_width() / 2, -t + Launcher.get_window_height() / 2
+        l, t = -l + window_width / 2, -t + window_height / 2
         l = min(0, l)  # Не движемся дальше левой границы
-        l = max(-(camera.width - Launcher.get_window_width()), l)  # Не движемся дальше правой границы
-        t = max(-(camera.height - Launcher.get_window_height()), t)  # Не движемся дальше нижней границы
+        l = max(-(camera.width - window_width), l)  # Не движемся дальше правой границы
+        t = max(-(camera.height - window_height), t)  # Не движемся дальше нижней границы
         t = min(0, t)  # Не движемся дальше верхней границы
         return Rect(l, t, w, h)
+
+    def get_level_difficult(self):
+        return self.__game_difficult
