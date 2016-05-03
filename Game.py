@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 
+import struct
 import random
 from pygame import *
 from Zones import *
@@ -13,7 +14,7 @@ from Intro import Intro
 class Game(object):
     def __init__(self):
         self.__game_music = "sounds/game.wav"  # Путь к музыке
-        self.__player = Player(100, 100)  # Создание игрока
+        self.__player = Player(150, 100)  # Создание игрока
         self.__game_difficult = 3  # Уровень сложности
         self.__min_height = 868  # Минимальная высота, после нее игрок умирает
         self.__best_score = 0  # Рекорд игрока
@@ -31,6 +32,7 @@ class Game(object):
         checkpoint = 0  # По достижение опр. кол-ва очков, очки игрока сохраняются сюда
         self.__draw_level(0, 0, start_zone)  # Отрисовываем уровень
         timer = pygame.time.Clock()  # Временной счетчик
+        self.__load_data("data", ".dat")  # Подгружаем данные
 
         # Фон
         moon_position = window_width - 142  # Начальная позицияя луны
@@ -76,15 +78,15 @@ class Game(object):
                 ])
 
             # Создаем объект камеры
-            total_level_width = len(start_zone[0]) * Block.get_block_width()  # Высчитываем фактическую ширину уровня
-            total_level_height = len(start_zone) * Block.get_block_height()  # Высчитываем фактическую высоту уровня
+            total_level_width = len(start_zone[0]) * Block.get_blocks_width()  # Высчитываем фактическую ширину уровня
+            total_level_height = len(start_zone) * Block.get_blocks_height()  # Высчитываем фактическую высоту уровня
             camera = Camera(self.camera_configure, total_level_width, total_level_height)
 
             # Обработка событий
             for e in pygame.event.get():
-                if e.type == KEYDOWN and e.key == K_UP:  # Обработка события нажатия клавиши UP
+                if e.type == KEYDOWN and e.key == K_UP or e.type == KEYDOWN and e.key == K_w:  # Обработка события нажатия клавиши UP
                     player_jump = True
-                if e.type == KEYUP and e.key == K_UP:  # Обработка события отпускания клавиши UP
+                if e.type == KEYUP and e.key == K_UP or e.type == KEYUP and e.key == K_w:  # Обработка события отпускания клавиши UP
                     player_jump = False
                 if e.type == KEYDOWN and e.key == K_ESCAPE:
                     # Удаляем все объекты
@@ -103,14 +105,16 @@ class Game(object):
                     self.__player.rect.x = self.__player.start_position_x
                     self.__player.rect.y = self.__player.start_position_y
                     self.__player.score = 0
-                    if Intro.check_sound():
+                    if Intro.check_sound():  # Если музыка была включена, то выключить ее
                         music.stop()
+                    self.__save_data("data", ".dat")  # Сохранение данных
                     return
                 if e.type == QUIT:  # Обрабатываем событие выхода из игры
+                    self.__save_data("data", ".dat")  # Сохранение данных
                     raise SystemExit
 
             # Подгрузка уровня
-            if len(self.__platforms) != 0 and self.__platforms[len(self.__platforms) - 1].rect.x < 1000:
+            if len(self.__platforms) != 0 and len(self.__to_delete_platforms) == 0 and self.__platforms[len(self.__platforms) - 1].rect.right <= 800:
                 # Помечаем объекты, которые мы пробежали, как удаляемые
                 for p in self.__platforms:
                     self.__to_delete_platforms.append(p)
@@ -120,24 +124,25 @@ class Game(object):
                     self.__to_delete_breakable.append(b)
 
                 # Подгружаем к текущей зоне новую случайную
-                self.__draw_level(self.__player.rect.x + 1000, 0, zones[random.randint(0, 3)])
-            elif len(self.__to_delete_platforms) != 0 and self.__to_delete_platforms[
-                        len(self.__to_delete_platforms) - 1].rect.x < -10:
-                # Удаляем объекты, которые игрок пробежал
-                self.__entities.remove(self.__to_delete_platforms)
-                self.__entities.remove(self.__to_delete_illusionary)
-                self.__entities.remove(self.__to_delete_breakable)
-                for i in xrange(len(self.__to_delete_platforms)):
-                    self.__platforms.__delitem__(0)
-                for i in xrange(len(self.__to_delete_illusionary)):
-                    self.__illusionary.__delitem__(0)
-                for i in xrange(len(self.__to_delete_breakable)):
-                    self.__breakable.__delitem__(0)
-
-                # Помечаем, что нет удаляемых объектов
-                self.__to_delete_platforms = []
-                self.__to_delete_illusionary = []
-                self.__to_delete_breakable = []
+                self.__draw_level(self.__platforms[len(self.__platforms) - 1].rect.right, 0, zones[random.randint(0, len(zones) - 1)])
+            elif len(self.__to_delete_platforms) != 0:
+                if self.__to_delete_platforms[len(self.__to_delete_platforms) - 1].rect.right < 0:
+                    # Удаляем объекты, которые игрок пробежал
+                    self.__entities.remove(self.__to_delete_platforms)
+                    self.__entities.remove(self.__to_delete_illusionary)
+                    self.__entities.remove(self.__to_delete_breakable)
+                    for i in xrange(len(self.__to_delete_platforms)):
+                        self.__platforms.__delitem__(0)
+                    for i in xrange(len(self.__to_delete_illusionary)):
+                        self.__illusionary.__delitem__(0)
+                    for i in xrange(len(self.__to_delete_breakable)):
+                        self.__breakable.__delitem__(0)
+                    for i in xrange(len(self.__to_delete_platforms)):
+                        self.__to_delete_platforms.__delitem__(0)
+                    for i in xrange(len(self.__to_delete_illusionary)):
+                        self.__to_delete_illusionary.__delitem__(0)
+                    for i in xrange(len(self.__to_delete_breakable)):
+                        self.__to_delete_breakable.__delitem__(0)
 
             # Отрисовка персонажа
             self.__player.update(player_jump, self.__game_difficult, self.__platforms, self.__illusionary,
@@ -160,7 +165,7 @@ class Game(object):
             screen.blit(bg, (0, 0))  # Отрисовка всей картины каждую итерацию цикла
             camera.update(self.__player, window_width, window_height)  # Обновление камеры по привязке к игроку
             self.__print_gameinfo(screen, bg, time_counter)  # Выводит на экран текстовую информацию
-            if int(self.__player.score) - checkpoint == 4000:  # Каждые 4000 увеличивать сложность
+            if int(self.__player.score) - checkpoint >= 4000:  # Каждые 4000 увеличивать сложность
                 checkpoint = self.__player.score
                 self.__game_difficult += 1
 
@@ -196,31 +201,29 @@ class Game(object):
 
     def __draw_level(self, start_position_x, start_position_y, level):
         # Отрисовка уровня по массиву level
-        x = start_position_x
         y = start_position_y
-        for row in level:
-            for col in row:
-                if col == "_":
-                    # Создание и заливка блока
-                    pf = Block(x, y, "rock")
+        x = start_position_x
+        for col in xrange(len(level[0])):
+            for row in xrange(len(level)):
+                if level[row][col] == "_":
+                    pf = Block(x, y, "grass_side")
                     self.__entities.add(pf)
                     self.__platforms.append(pf)
-                elif col == "#":
-                    # Создание и заливка блока
+                elif level[row][col] == "#":
                     pf = Block(x, y, "dirt")
                     self.__entities.add(pf)
                     self.__platforms.append(pf)
-                elif col == "@":
+                elif level[row][col] == "@":
                     pf = Block(x, y, "bone")
                     self.__entities.add(pf)
                     self.__breakable.append(pf)
-                elif col == ";":
+                elif level[row][col] == ";":
                     pf = Block(x, y, "grass")
                     self.__entities.add(pf)
                     self.__illusionary.append(pf)
-                x += Block.get_block_width()
-            y += Block.get_block_height()
-            x = start_position_x
+                y += Block.get_blocks_height()
+            x += Block.get_blocks_width()
+            y = start_position_y
 
     def __clear_level(self):
         self.__entities.remove(self.__platforms)
@@ -261,6 +264,24 @@ class Game(object):
         best_rect = best_surface.get_rect()  # Получаем область поверхности
         best_rect.x, best_rect.y = 20, 20  # Задаем координаты отображения рекорда
         screen.blit(best_surface, best_rect)  # Отображаем текст
+
+    def __save_data(self, file_name, file_ext):
+        write_file = open(file_name + file_ext, "wb")
+        score_for_saving = struct.pack(">i", self.__best_score)
+        write_file.write(score_for_saving)
+        write_file.close()
+
+    def __load_data(self, file_name, file_ext):
+        try:
+            load_file = open(file_name + file_ext, "rb")
+        except (OSError, IOError):
+            load_file = open(file_name + file_ext, "wb")
+            load_file.write(struct.pack(">i", 0))
+            load_file.close()
+            load_file = open(file_name + file_ext, "rb")
+        score_for_saving = load_file.read()
+        self.__best_score = struct.unpack(">i", score_for_saving)[0]
+        load_file.close()
 
     @staticmethod
     def camera_configure(camera, target_rect, window_width, window_height):

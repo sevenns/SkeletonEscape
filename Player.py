@@ -82,14 +82,14 @@ class Player(pygame.sprite.Sprite):
                         self.on_ground = True
                         self.jump_power = 0
                 # Обездвиживаем при прыжке
-                if y_speed < 0 and self.rect.top >= p.rect.bottom - 1:
+                if y_speed < 0 and self.rect.top >= p.rect.bottom - 5:
                     self.rect.top = p.rect.bottom
                     self.jump_power = 0
         for i in illusionary:
             if sprite.collide_rect(self, i):
                 pass
         for b in breakable:
-            if sprite.collide_rect(self, b) and b.exist:
+            if sprite.collide_rect(self, b) and b.get_exist():
                 self.bones += 1
                 self.score += 500
                 b.destroy()
