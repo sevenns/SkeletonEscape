@@ -217,7 +217,7 @@ class Game(object):
                     pf = Block(x, y, "bone")
                     self.__entities.add(pf)
                     self.__breakable.append(pf)
-                elif level[row][col] == ";":
+                elif level[row][col] == "g":
                     pf = Block(x, y, "grass")
                     self.__entities.add(pf)
                     self.__illusionary.append(pf)
@@ -243,27 +243,31 @@ class Game(object):
             self.__to_delete_illusionary.__delitem__(0)
 
     def __print_gameinfo(self, screen, bg, time_counter):
-        best_font = pygame.font.SysFont("Harrington", 36)  # Шрифт рекорда
-        score_font = pygame.font.SysFont("Harrington", 64)  # Шрифт очков
         # Очки игрока
         self.__player.score += time_counter / 10  # Используя счетчик времени копим очки игроку
-        score_msg = str(self.__player.score)  # Текст сообщения
-        score_surface = score_font.render(score_msg, True, (255, 255, 255))  # Поверхность с текстом
-        score_rect = score_surface.get_rect()  # Получаем область поверхности
-        score_rect.center = (bg.get_width()/2, 200)  # Задаем координаты отображения текста
-        screen.blit(score_surface, score_rect)  # Отображаем текст
-
+        self._print_text(screen, str(self.__player.score), "Harrington", 64,
+                         [255, 255, 255], "center", bg.get_width()/2, 200)  # Вывод текст с счетом игрока
         # Рекорд игрока
         if self.__best_score < self.__player.score:
             self.__best_score = self.__player.score
             best_msg_color = [255, 255, 255]
         else:
             best_msg_color = [210, 215, 211]
-        best_msg = "Best: " + str(self.__best_score)  # Текст сообщения
-        best_surface = best_font.render(best_msg, True, best_msg_color)  # Поверхность с текстом
-        best_rect = best_surface.get_rect()  # Получаем область поверхности
-        best_rect.x, best_rect.y = 20, 20  # Задаем координаты отображения рекорда
-        screen.blit(best_surface, best_rect)  # Отображаем текст
+        self._print_text(screen, "Best: " + str(self.__best_score), "Harrington",
+                         36, best_msg_color, "custom", 20, 20)  # Вывод текст с лучшим счетом игрока
+
+    @staticmethod
+    def _print_text(screen, msg, font_face, font_size, font_color, align, x, y):
+        font_obj = pygame.font.SysFont(font_face, font_size)
+        text_msg = msg
+        text_surface = font_obj.render(text_msg, True, font_color)
+        text_rect = text_surface.get_rect()
+        if align == "center":
+            text_rect.center = (x, y)
+        elif align == "custom":
+            text_rect.x = x
+            text_rect.y = y
+        screen.blit(text_surface, text_rect)
 
     def __save_data(self, file_name, file_ext):
         write_file = open(file_name + file_ext, "wb")

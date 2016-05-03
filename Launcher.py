@@ -10,13 +10,15 @@ from Game import Game
 
 
 class Launcher(object):
-    __window_width = 800
-    __window_height = 640
+    __window_width = 800  # Ширина окна
+    __window_height = 640  # Высота окна
+    __window_icon = image.load_extended("textures/items/bone.png")  # Иконка
 
     def main_start(self):
         os.environ['SDL_VIDEO_CENTERED'] = '1'  # Центрирование окна при запуске
         pygame.init()  # Инициализация py game
         screen = pygame.display.set_mode((self.__window_width, self.__window_height))  # Создание окна
+        pygame.display.set_icon(self.__window_icon)
         pygame.display.set_caption("Skeleton Escape Alpha 0.1")  # Заголовок окна
         bg = Surface((self.__window_width, self.__window_height))  # Создание видимой поверхности фона
         exit_flag = False

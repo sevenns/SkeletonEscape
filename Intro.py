@@ -22,7 +22,6 @@ class Intro(object):
         if Intro.check_sound():
             pygame.mixer.music.play(-1)  # Проигрывание музыки бесконечно
 
-        best_font = pygame.font.SysFont("Harrington", 36)  # Шрифт рекорда
         menu_font = pygame.font.SysFont("Harrington", 32)  # Шрифт меню
         play_color = [210, 215, 211]
         sound_color = [210, 215, 211]
@@ -37,13 +36,12 @@ class Intro(object):
 
             # Вывод рекорда
             if self.__best_score != 0:
-                best_surface = best_font.render("Best: " + str(self.__best_score), True, (255, 255, 255))
+                best_msg = "Best: " + str(self.__best_score)
             else:
-                best_surface = best_font.render("No have BEST", True, (255, 255, 255))
-            best_rect = best_surface.get_rect()  # Получаем область поверхности
-            best_rect.x, best_rect.y = 20, 20  # Задаем координаты отображения рекорда
-            screen.blit(best_surface, best_rect)  # Отображаем текст
+                best_msg = "No have BEST"
+            self._print_text(screen, best_msg, "Harrington", 36, [255, 255, 255], "custom", 20, 20)
 
+            # Вывод меню
             play_surface = menu_font.render("PLAY", True, play_color)  # Создаем поверхность с текстом
             play_rect = play_surface.get_rect()  # Получаем область поверхности с текстом
             play_rect.center = (650, 300)  # Задаем координаты этой области
@@ -56,6 +54,9 @@ class Intro(object):
             exit_rect = exit_surface.get_rect()
             exit_rect.center = (650, 400)
             screen.blit(exit_surface, exit_rect)
+
+            # Вывод версии
+            self._print_text(screen, "Beta 0.3", "Consolas", 18, [255, 255, 255], "custom", bg.get_width() - 150, 10)
             for e in pygame.event.get():
                 if e.type == KEYDOWN and e.key == K_RETURN:
                     intro = False
@@ -114,6 +115,19 @@ class Intro(object):
         score_for_saving = load_file.read()
         self.__best_score = struct.unpack(">i", score_for_saving)[0]
         load_file.close()
+
+    @staticmethod
+    def _print_text(screen, msg, font_face, font_size, font_color, align, x, y):
+        font_obj = pygame.font.SysFont(font_face, font_size)
+        text_msg = msg
+        text_surface = font_obj.render(text_msg, True, font_color)
+        text_rect = text_surface.get_rect()
+        if align == "center":
+            text_rect.center = (x, y)
+        elif align == "custom":
+            text_rect.x = x
+            text_rect.y = y
+        screen.blit(text_surface, text_rect)
 
     @staticmethod
     def check_sound():

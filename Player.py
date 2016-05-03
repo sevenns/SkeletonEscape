@@ -91,7 +91,7 @@ class Player(pygame.sprite.Sprite):
         for b in breakable:
             if sprite.collide_rect(self, b) and b.get_exist():
                 self.bones += 1
-                self.score += 500
+                self.score += 150
                 b.destroy()
 
     def die(self):
