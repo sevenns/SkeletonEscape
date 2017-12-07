@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-import py2exe.py2exe_util
 import os
 import pygame
 from pygame import *
@@ -19,7 +18,7 @@ class Launcher(object):
         pygame.init()  # Инициализация py game
         screen = pygame.display.set_mode((self.__window_width, self.__window_height))  # Создание окна
         pygame.display.set_icon(self.__window_icon)
-        pygame.display.set_caption("Skeleton Escape Alpha 0.1")  # Заголовок окна
+        pygame.display.set_caption("Skeleton Escape Beta 0.3")  # Заголовок окна
         bg = Surface((self.__window_width, self.__window_height))  # Создание видимой поверхности фона
         exit_flag = False
         game_intro = Intro()
